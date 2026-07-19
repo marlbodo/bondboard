@@ -8,21 +8,16 @@
 </head>
 <body class="bg-gray-50 p-6">
 <div class="max-w-3xl mx-auto bg-white p-8 rounded shadow">
-    <!-- 목록으로 돌아가는 버튼 추가 -->
     <div class="mb-4">
         <button onclick="location.href='index.html'" class="px-4 py-2 bg-gray-200 rounded text-sm hover:bg-gray-300">← 목록으로</button>
     </div>
-    
     <h1 id="t" class="text-2xl font-bold mb-4"></h1>
     <div id="m" class="text-sm text-gray-500 mb-6"></div>
     <p id="c" class="mb-8 whitespace-pre-line"></p>
     <div id="f" class="mb-6"></div>
-    
     <button onclick="del()" class="bg-red-500 text-white px-4 py-2 rounded">삭제</button>
-    
     <div class="mt-8 border-t pt-4">
-        <h2 class="font-bold mb-2">댓글</h2>
-        <div id="cs" class="mb-4"></div>
+        <h2 class="font-bold mb-2">댓글</h2><div id="cs" class="mb-4"></div>
         <input type="text" id="cn" placeholder="닉네임" class="block w-full p-2 border mb-2">
         <input type="password" id="cp" placeholder="비밀번호" class="block w-full p-2 border mb-2">
         <textarea id="cc" placeholder="댓글" class="block w-full p-2 border mb-2"></textarea>
@@ -32,13 +27,12 @@
 <script>
     const sb = supabase.createClient('https://gbgazkerfzjosdmofbbs.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdiZ2F6a2VyZnpqb3NkbW9mYmJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyNzg1MzksImV4cCI6MjA5OTg1NDUzOX0.ZfNl_gkJhb5hiyRGPLxf95VwAg6dgsK7_KZVDRIxxo4');
     const pid = new URLSearchParams(window.location.search).get('id');
-    
     async function load() {
         const { data: p } = await sb.from('posts').select('*').eq('id', pid).single();
         document.getElementById('t').innerText = p.title;
         document.getElementById('m').innerText = `${p.nickname} | ${p.views} 조회`;
         document.getElementById('c').innerText = p.content;
-        if(p.file_url) document.getElementById('f').innerHTML = `<a href="${p.file_url}" target="_blank" class="text-blue-600 underline">📎 파일 다운로드</a>`;
+        if(p.file_url) document.getElementById('f').innerHTML = `<a href="${p.file_url}" target="_blank" class="text-blue-600 underline font-bold">📎 첨부파일 다운로드</a>`;
         
         const viewed = JSON.parse(localStorage.getItem('v') || '{}');
         if (!viewed[pid] || Date.now() - viewed[pid] > 3600000) {
@@ -49,19 +43,8 @@
         const { data: cs } = await sb.from('comments').select('*').eq('post_id', pid);
         document.getElementById('cs').innerHTML = cs.map(c => `<div class="border-b py-2 text-sm"><b>${c.nickname}</b>: ${c.content}</div>`).join('');
     }
-    
-    async function ac() { 
-        await sb.from('comments').insert([{ post_id: pid, nickname: document.getElementById('cn').value, password: document.getElementById('cp').value, content: document.getElementById('cc').value }]); 
-        location.reload(); 
-    }
-    
-    async function del() { 
-        const pw = prompt('비밀번호'); 
-        const { data: p } = await sb.from('posts').select('password').eq('id', pid).single(); 
-        if(p.password === pw) { await sb.from('posts').delete().eq('id', pid); location.href='index.html'; } 
-        else alert('틀림'); 
-    }
-    
+    async function ac() { await sb.from('comments').insert([{ post_id: pid, nickname: document.getElementById('cn').value, password: document.getElementById('cp').value, content: document.getElementById('cc').value }]); location.reload(); }
+    async function del() { const pw = prompt('비밀번호'); const { data: p } = await sb.from('posts').select('password').eq('id', pid).single(); if(p.password === pw) { await sb.from('posts').delete().eq('id', pid); location.href='index.html'; } else alert('틀림'); }
     load();
 </script>
 </body>
