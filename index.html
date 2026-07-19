@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>게시판 목록</title>
+    <title>게시판</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -19,37 +19,47 @@
         <table class="w-full text-left">
             <thead class="bg-gray-100 border-b">
                 <tr>
-                    <th class="p-4 font-semibold text-gray-700">제목</th>
-                    <th class="p-4 font-semibold text-gray-700">작성자</th>
-                    <th class="p-4 font-semibold text-gray-700">조회수</th>
-                    <th class="p-4 font-semibold text-gray-700">작성일</th>
+                    <th class="p-4 text-gray-700">제목</th>
+                    <th class="p-4 text-gray-700">작성자</th>
+                    <th class="p-4 text-gray-700">조회수</th>
+                    <th class="p-4 text-gray-700">작성일</th>
                 </tr>
             </thead>
             <tbody id="posts-body" class="divide-y divide-gray-200">
-                <!-- 데이터가 이곳에 삽입됩니다 -->
+                <tr>
+                    <td colspan="4" class="p-8 text-center text-gray-500">불러오는 중...</td>
+                </tr>
             </tbody>
         </table>
     </div>
 </div>
 
 <script>
-    // Supabase 설정
     const SUPABASE_URL = 'https://gbgazkerfzjosdmofbbs.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdiZ2F6a2VyZnpqb3NkbW9mYmJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyNzg1MzksImV4cCI6MjA5OTg1NDUzOX0.ZfNl_gkJhb5hiyRGPLxf95VwAg6dgsK7_KZVDRIxxo4';
+    
     const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     async function fetchPosts() {
+        // 테이블 이름은 'posts'가 확실합니다.
         const { data, error } = await supabase
             .from('posts')
-            .select('*')
+            .select('id, title, nickname, views, created_at')
             .order('created_at', { ascending: false });
 
+        const tbody = document.getElementById('posts-body');
+
         if (error) {
-            console.error('Error fetching posts:', error);
+            console.error('에러 발생:', error);
+            tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-red-500">데이터를 불러오지 못했습니다.</td></tr>`;
             return;
         }
 
-        const tbody = document.getElementById('posts-body');
+        if (!data || data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center">등록된 게시글이 없습니다.</td></tr>`;
+            return;
+        }
+
         tbody.innerHTML = data.map(post => `
             <tr class="hover:bg-gray-50 cursor-pointer" onclick="location.href='view.html?id=${post.id}'">
                 <td class="p-4">${post.title}</td>
