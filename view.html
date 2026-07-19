@@ -1,86 +1,20 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <title>게시글 보기</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-</head>
-<body class="bg-slate-50 min-h-screen p-4 md:p-8">
-
-<div class="max-w-3xl mx-auto">
-    <!-- 상단 내비게이션 -->
-    <button onclick="location.href='index.html'" class="mb-6 text-slate-500 hover:text-slate-800 transition font-medium flex items-center gap-1">
-        &larr; 목록으로 돌아가기
-    </button>
-
-    <!-- 게시글 본문 -->
-    <article class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 mb-6">
-        <h1 id="t" class="text-3xl font-extrabold text-slate-900 mb-3 tracking-tight"></h1>
-        <div id="m" class="text-slate-400 text-sm mb-8 pb-6 border-b border-slate-100"></div>
-        <p id="c" class="text-slate-700 leading-relaxed text-lg mb-10 whitespace-pre-line"></p>
-        
-        <div id="f" class="mb-8"></div>
-        
-        <button onclick="del()" class="text-sm text-red-500 hover:text-red-700 font-medium transition">게시글 삭제</button>
-    </article>
-
-    <!-- 댓글 영역 -->
-    <section class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
-        <h2 class="text-lg font-bold text-slate-800 mb-6">댓글</h2>
+<!-- 댓글 영역 -->
+    <section class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+        <h2 class="text-lg font-bold text-slate-700 mb-6">댓글</h2>
         <div id="cs" class="space-y-4 mb-8"></div>
         
-        <!-- 댓글 입력 폼 (좌우 배치) -->
+        <!-- 댓글 입력 폼 (우측 등록 버튼 배치) -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div class="md:col-span-1 space-y-2">
-                <input type="text" id="cn" placeholder="닉네임" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
-                <input type="password" id="cp" placeholder="비밀번호" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                <input type="text" id="cn" placeholder="닉네임" class="w-full p-3 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-400 outline-none text-slate-700">
+                <input type="password" id="cp" placeholder="비밀번호" class="w-full p-3 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-400 outline-none text-slate-700">
             </div>
             <div class="md:col-span-3">
-                <textarea id="cc" placeholder="댓글 내용을 입력하세요..." class="w-full h-24 p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none resize-none"></textarea>
-                <button onclick="ac()" class="w-full mt-2 py-3 bg-slate-900 text-white font-semibold rounded-xl hover:bg-slate-800 transition">댓글 등록</button>
+                <textarea id="cc" placeholder="댓글 내용을 입력하세요..." class="w-full h-24 p-3 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-400 outline-none text-slate-700 resize-none"></textarea>
+                <!-- 등록 버튼을 우측으로 배치 -->
+                <div class="flex justify-end mt-2">
+                    <button onclick="ac()" class="px-8 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition">댓글 등록</button>
+                </div>
             </div>
         </div>
     </section>
-</div>
-
-<script>
-    const sb = supabase.createClient('https://gbgazkerfzjosdmofbbs.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdiZ2F6a2VyZnpqb3NkbW9mYmJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyNzg1MzksImV4cCI6MjA5OTg1NDUzOX0.ZfNl_gkJhb5hiyRGPLxf95VwAg6dgsK7_KZVDRIxxo4');
-    const pid = new URLSearchParams(window.location.search).get('id');
-
-    async function load() {
-        const { data: p } = await sb.from('posts').select('*').eq('id', pid).single();
-        document.getElementById('t').innerText = p.title;
-        document.getElementById('m').innerText = `작성자: ${p.nickname} | 조회수: ${p.views}`;
-        document.getElementById('c').innerText = p.content;
-        if(p.file_url) document.getElementById('f').innerHTML = `<a href="${p.file_url}" target="_blank" class="inline-flex items-center px-4 py-2 bg-blue-50 text-blue-600 rounded-full font-medium hover:bg-blue-100 transition">📎 첨부파일 다운로드</a>`;
-        
-        const viewed = JSON.parse(localStorage.getItem('v') || '{}');
-        if (!viewed[pid] || Date.now() - viewed[pid] > 3600000) {
-            await sb.from('posts').update({ views: p.views + 1 }).eq('id', pid);
-            viewed[pid] = Date.now();
-            localStorage.setItem('v', JSON.stringify(viewed));
-        }
-        const { data: cs } = await sb.from('comments').select('*').eq('post_id', pid);
-        document.getElementById('cs').innerHTML = cs.map(c => `
-            <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                <div class="font-bold text-slate-800 text-sm mb-1">${c.nickname}</div>
-                <div class="text-slate-600 text-sm">${c.content}</div>
-            </div>`).join('');
-    }
-
-    async function ac() { 
-        await sb.from('comments').insert([{ post_id: pid, nickname: document.getElementById('cn').value, password: document.getElementById('cp').value, content: document.getElementById('cc').value }]); 
-        location.reload(); 
-    }
-    
-    async function del() { 
-        const pw = prompt('비밀번호를 입력하세요.'); 
-        const { data: p } = await sb.from('posts').select('password').eq('id', pid).single(); 
-        if(p.password === pw) { await sb.from('posts').delete().eq('id', pid); location.href='index.html'; } 
-        else alert('비밀번호가 일치하지 않습니다.'); 
-    }
-    load();
-</script>
-</body>
-</html>
