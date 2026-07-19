@@ -8,7 +8,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-gray-50">
-
 <div class="max-w-4xl mx-auto p-6">
     <header class="flex justify-between items-center mb-8">
         <h1 class="text-2xl font-bold text-gray-800 cursor-pointer" onclick="location.href='index.html'">게시판</h1>
@@ -18,81 +17,48 @@
                 <option value="20">20개씩</option>
                 <option value="30">30개씩</option>
             </select>
-            <a href="write.html" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">글쓰기</a>
+            <a href="write.html" class="bg-blue-600 text-white px-4 py-2 rounded-lg">글쓰기</a>
         </div>
     </header>
-
     <div class="bg-white shadow-md rounded-lg overflow-hidden">
         <table class="w-full text-left">
             <thead class="bg-gray-100 border-b">
                 <tr>
                     <th class="p-4 text-gray-700">번호</th>
+                    <th class="p-4 text-gray-700">파일</th>
                     <th class="p-4 text-gray-700">제목</th>
                     <th class="p-4 text-gray-700">작성자</th>
                     <th class="p-4 text-gray-700">조회수</th>
-                    <th class="p-4 text-gray-700">작성일</th>
                 </tr>
             </thead>
             <tbody id="posts-body" class="divide-y divide-gray-200"></tbody>
         </table>
     </div>
-
     <div class="mt-6 flex justify-center gap-4">
         <button id="prev-btn" class="px-4 py-2 bg-gray-200 rounded disabled:opacity-50" onclick="movePage(-1)">이전</button>
         <span id="page-num" class="py-2">1 페이지</span>
         <button id="next-btn" class="px-4 py-2 bg-gray-200 rounded" onclick="movePage(1)">다음</button>
     </div>
 </div>
-
 <script>
-    const SUPABASE_URL = 'https://gbgazkerfzjosdmofbbs.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdiZ2F6a2VyZnpqb3NkbW9mYmJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyNzg1MzksImV4cCI6MjA5OTg1NDUzOX0.ZfNl_gkJhb5hiyRGPLxf95VwAg6dgsK7_KZVDRIxxo4';
-    const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    let currentPage = 0;
-    let limit = 10;
-
+    const sbClient = supabase.createClient('https://gbgazkerfzjosdmofbbs.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdiZ2F6a2VyZnpqb3NkbW9mYmJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyNzg1MzksImV4cCI6MjA5OTg1NDUzOX0.ZfNl_gkJhb5hiyRGPLxf95VwAg6dgsK7_KZVDRIxxo4');
+    let currentPage = 0, limit = 10;
     async function fetchPosts() {
-        const from = currentPage * limit;
-        const to = from + limit - 1;
-
-        const { data, error } = await sbClient
-            .from('posts')
-            .select('id, title, nickname, views, created_at')
-            .order('id', { ascending: false }) // 글 번호 내림차순
-            .range(from, to);
-
-        if (error) {
-            console.error(error);
-            return;
-        }
-
+        const { data } = await sbClient.from('posts').select('*').order('id', { ascending: false }).range(currentPage * limit, (currentPage + 1) * limit - 1);
         const tbody = document.getElementById('posts-body');
-        tbody.innerHTML = data.map(post => `
-            <tr class="hover:bg-gray-50 cursor-pointer" onclick="location.href='view.html?id=${post.id}'">
-                <td class="p-4">${post.id}</td>
-                <td class="p-4">${post.title}</td>
-                <td class="p-4">${post.nickname}</td>
-                <td class="p-4">${post.views}</td>
-                <td class="p-4">${new Date(post.created_at).toLocaleDateString()}</td>
+        tbody.innerHTML = data.map(p => `
+            <tr class="hover:bg-gray-50 cursor-pointer" onclick="location.href='view.html?id=${p.id}'">
+                <td class="p-4">${p.id}</td>
+                <td class="p-4">${p.file_url ? '📎' : ''}</td>
+                <td class="p-4">${p.title}</td>
+                <td class="p-4">${p.nickname}</td>
+                <td class="p-4">${p.views}</td>
             </tr>
         `).join('');
-
         document.getElementById('page-num').innerText = `${currentPage + 1} 페이지`;
-        document.getElementById('prev-btn').disabled = currentPage === 0;
     }
-
-    function movePage(dir) {
-        currentPage += dir;
-        fetchPosts();
-    }
-
-    function changeLimit() {
-        limit = parseInt(document.getElementById('limit-select').value);
-        currentPage = 0;
-        fetchPosts();
-    }
-
+    function movePage(dir) { currentPage += dir; fetchPosts(); }
+    function changeLimit() { limit = parseInt(document.getElementById('limit-select').value); currentPage = 0; fetchPosts(); }
     fetchPosts();
 </script>
 </body>
