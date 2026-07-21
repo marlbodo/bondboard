@@ -74,7 +74,18 @@
         document.getElementById('m').innerText = `작성자: ${p.nickname} | 작성일: ${formattedDate} | 조회수: ${p.views}`;
         
         document.getElementById('c').innerText = p.content;
-        if(p.file_url) document.getElementById('f').innerHTML = `<a href="${p.file_url}" target="_blank" class="inline-flex items-center px-4 py-2 bg-slate-100 text-slate-700 rounded-full font-medium hover:bg-slate-200 transition">📎 첨부파일 다운로드</a>`;
+        
+        // 첨부파일 영역 처리 (download 속성 추가 및 원본 파일명 추출)
+        if(p.file_url) {
+            // URL의 마지막 슬래시(/) 뒤의 파일명을 추출하되, 업로드 시 붙은 타임스탬프나 난수 제거 (예: 1784611630356_파일명.ext -> 파일명.ext)
+            const rawFileName = decodeURIComponent(p.file_url.split('/').pop());
+            const fileName = rawFileName.includes('_') ? rawFileName.substring(rawFileName.indexOf('_') + 1) : rawFileName;
+            
+            document.getElementById('f').innerHTML = `
+                <a href="${p.file_url}" download="${fileName}" target="_blank" class="inline-flex items-center px-4 py-2 bg-slate-100 text-slate-700 rounded-full font-medium hover:bg-slate-200 transition">
+                    📎 첨부파일 다운로드 (${fileName})
+                </a>`;
+        }
         
         const viewed = JSON.parse(localStorage.getItem('v') || '{}');
         if (!viewed[pid] || Date.now() - viewed[pid] > 3600000) {
