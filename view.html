@@ -77,7 +77,6 @@
         
         // 첨부파일 영역 처리 (download 속성 추가 및 원본 파일명 추출)
         if(p.file_url) {
-            // URL의 마지막 슬래시(/) 뒤의 파일명을 추출하되, 업로드 시 붙은 타임스탬프나 난수 제거 (예: 1784611630356_파일명.ext -> 파일명.ext)
             const rawFileName = decodeURIComponent(p.file_url.split('/').pop());
             const fileName = rawFileName.includes('_') ? rawFileName.substring(rawFileName.indexOf('_') + 1) : rawFileName;
             
@@ -113,9 +112,36 @@
     
     async function del() { 
         const pw = prompt('비밀번호를 입력하세요.'); 
-        const { data: p } = await sb.from('posts').select('password').eq('id', pid).single(); 
-        if(p.password === pw) { await sb.from('posts').delete().eq('id', pid); location.href='index.html'; } 
-        else alert('비밀번호가 일치하지 않습니다.'); 
+        const { data: p } = await sb.from('posts').select('password, file_url').eq('id', pid).single(); 
+        
+        if (p.password === pw) { 
+            // 1. Supabase Storage에 첨부파일이 존재하면 파일 삭제
+            if (p.file_url) {
+                try {
+                    const urlObj = new URL(p.file_url);
+                    const pathParts = urlObj.pathname.split('/public/');
+                    if (pathParts.length > 1) {
+                        const filePath = decodeURIComponent(pathParts[1]); 
+                        const bucketName = filePath.split('/')[0]; 
+                        const relativePath = filePath.substring(bucketName.length + 1); 
+                        
+                        await sb.storage.from(bucketName).remove([relativePath]);
+                    }
+                } catch (e) {
+                    console.error("스토리지 파일 삭제 실패:", e);
+                }
+            }
+
+            // 2. 연관된 댓글 데이터 삭제
+            await sb.from('comments').delete().eq('post_id', pid); 
+            
+            // 3. 게시글 데이터 삭제
+            await sb.from('posts').delete().eq('id', pid); 
+            
+            location.href = 'index.html'; 
+        } else {
+            alert('비밀번호가 일치하지 않습니다.'); 
+        }
     }
     load();
 </script>
