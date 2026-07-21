@@ -66,6 +66,31 @@
         }).replace(/\. /g, '.').replace(',', '');
     }
 
+    // 파일을 강제로 다운로드 처리하는 함수
+    async function downloadFile(fileUrl, fileName) {
+        try {
+            // 파일을 바이너리(Blob) 형태로 직접 다운로드 받아옴
+            const response = await fetch(fileUrl);
+            const blob = await response.blob();
+            
+            // 가상의 다운로드 링크 생성
+            const blobUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = fileName; // 지정할 파일명
+            document.body.appendChild(a);
+            a.click();
+            
+            // 정리
+            a.remove();
+            window.URL.revokeObjectURL(blobUrl);
+        } catch (e) {
+            console.error('다운로드 실패:', e);
+            // 에러 시 새 창으로 열기 시도
+            window.open(fileUrl, '_blank');
+        }
+    }
+
     async function load() {
         const { data: p } = await sb.from('posts').select('*').eq('id', pid).single();
         document.getElementById('t').innerText = p.title;
@@ -75,15 +100,15 @@
         
         document.getElementById('c').innerText = p.content;
         
-        // 첨부파일 영역 처리 (download 속성 추가 및 원본 파일명 추출)
+        // 첨부파일 영역 처리 (자바스크립트 강제 다운로드 함수 연결)
         if(p.file_url) {
             const rawFileName = decodeURIComponent(p.file_url.split('/').pop());
             const fileName = rawFileName.includes('_') ? rawFileName.substring(rawFileName.indexOf('_') + 1) : rawFileName;
             
             document.getElementById('f').innerHTML = `
-                <a href="${p.file_url}" download="${fileName}" target="_blank" class="inline-flex items-center px-4 py-2 bg-slate-100 text-slate-700 rounded-full font-medium hover:bg-slate-200 transition">
+                <button onclick="downloadFile('${p.file_url}', '${fileName}')" class="inline-flex items-center px-4 py-2 bg-slate-100 text-slate-700 rounded-full font-medium hover:bg-slate-200 transition cursor-pointer">
                     📎 첨부파일 다운로드 (${fileName})
-                </a>`;
+                </button>`;
         }
         
         const viewed = JSON.parse(localStorage.getItem('v') || '{}');
@@ -115,7 +140,6 @@
         const { data: p } = await sb.from('posts').select('password, file_url').eq('id', pid).single(); 
         
         if (p.password === pw) { 
-            // 1. Supabase Storage에 첨부파일이 존재하면 파일 삭제
             if (p.file_url) {
                 try {
                     const urlObj = new URL(p.file_url);
@@ -132,10 +156,7 @@
                 }
             }
 
-            // 2. 연관된 댓글 데이터 삭제
             await sb.from('comments').delete().eq('post_id', pid); 
-            
-            // 3. 게시글 데이터 삭제
             await sb.from('posts').delete().eq('id', pid); 
             
             location.href = 'index.html'; 
