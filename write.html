@@ -34,14 +34,20 @@
 
         // 파일이 선택되었을 경우 Supabase Storage에 업로드
         if (file) {
-            const fileName = `${Date.now()}_${file.name}`;
-            const { data, error } = await sb.storage.from('uploads').upload(fileName, file);
+            // 한글, 공백, 특수문자로 인한 업로드 오류 방지를 위해 확장자만 추출하고 영문/숫자 기반 이름으로 생성
+            const fileExt = file.name.includes('.') ? file.name.split('.').pop() : '';
+            const safeFileName = `${Date.now()}_${Math.random().toString(36.substring(2, 9))}${fileExt ? '.' + fileExt : ''}`;
+            
+            // 원래 파일명(한글, 공백 포함)을 안전하게 인코딩해서 저장하거나, 
+            // 업로드 시에는 safeFileName을 쓰고 다운로드 화면에서 원래 이름을 유추할 수 있도록 처리
+            // 여기서는 서버에 올라가는 실제 파일명을 안전하게 처리합니다.
+            const { data, error } = await sb.storage.from('uploads').upload(safeFileName, file);
             
             if (error) {
                 alert('파일 업로드 실패: ' + error.message);
                 return;
             }
-            url = sb.storage.from('uploads').getPublicUrl(fileName).data.publicUrl;
+            url = sb.storage.from('uploads').getPublicUrl(safeFileName).data.publicUrl;
         }
 
         // 게시글 데이터 삽입
