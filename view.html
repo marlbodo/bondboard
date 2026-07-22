@@ -66,27 +66,40 @@
         }).replace(/\. /g, '.').replace(',', '');
     }
 
-    // 파일을 강제로 다운로드 처리하는 함수
+    // 안드로이드 앱인지 확인하는 함수
+    function isAndroidApp() {
+        return window.Android !== undefined;
+    }
+
+    // 파일 다운로드 처리 함수 (웹/앱 분기)
     async function downloadFile(fileUrl, fileName) {
+        // 안드로이드 앱 환경일 경우 a 태그 클릭으로 유도하여 WebView의 setDownloadListener가 가로채도록 함
+        if (isAndroidApp()) {
+            const a = document.createElement('a');
+            a.href = fileUrl;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            return;
+        }
+
+        // 일반 브라우저 환경에서는 기존처럼 Blob 방식으로 강제 다운로드
         try {
-            // 파일을 바이너리(Blob) 형태로 직접 다운로드 받아옴
             const response = await fetch(fileUrl);
             const blob = await response.blob();
             
-            // 가상의 다운로드 링크 생성
             const blobUrl = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = blobUrl;
-            a.download = fileName; // 지정할 파일명
+            a.download = fileName;
             document.body.appendChild(a);
             a.click();
             
-            // 정리
             a.remove();
             window.URL.revokeObjectURL(blobUrl);
         } catch (e) {
             console.error('다운로드 실패:', e);
-            // 에러 시 새 창으로 열기 시도
             window.open(fileUrl, '_blank');
         }
     }
@@ -100,7 +113,7 @@
         
         document.getElementById('c').innerText = p.content;
         
-        // 첨부파일 영역 처리 (자바스크립트 강제 다운로드 함수 연결)
+        // 첨부파일 영역 처리
         if(p.file_url) {
             const rawFileName = decodeURIComponent(p.file_url.split('/').pop());
             const fileName = rawFileName.includes('_') ? rawFileName.substring(rawFileName.indexOf('_') + 1) : rawFileName;
